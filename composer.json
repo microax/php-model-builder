@@ -1,0 +1,10 @@
+{
+    "name": "entityobjects/php-model-builder",
+    "description": "A simple PHP ORM tool",
+    "version": "1.0.1",
+    "homepage": "http://www.entityobjects.com/",
+    "license": "MIT",
+    "autoload": {
+        "files": ["buildModel"]
+    }
+}

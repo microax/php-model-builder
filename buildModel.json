@@ -1,0 +1,12 @@
+{
+    "dbname":      "exampleDB",
+    "dbserver":    "127.0.0.1",
+    "dbport":      "3306",
+    "dbdriver":    "mysql",
+    "dbcharset":   "utf8",
+    "dbuser":      "dbuser",
+    "dbpassword":  "dbpassword",
+    "scriptdir":   "./",
+    "modeldir":    "./model/",
+    "dbbaseclass": "ExampleDB"
+}

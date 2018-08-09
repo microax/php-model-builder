@@ -1,0 +1,149 @@
+#!/usr/bin/php
+<?php
+/*
+ Copyright (c) 2018 EntityObjects.com
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
+
+ The Software shall be used for Good, not Evil.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+ */
+
+/********************************************************************
+ * buildModel 
+ * 
+ * 
+ * @author  Michael Gill
+ * @version 1.180525
+ *********************************************************************
+ */
+//--------------------------------------------------
+// first, we try to find the configuration file...
+//--------------------------------------------------
+if($argc > 1)
+    $configFile = $argv[1];
+else
+    $configFile = $argv[0].".json";
+if(!file_exists($configFile))    
+    die("\ncould not find configuration file:".$configFile."\n");
+echo "\nbuildModel using ".$configFile."\n";
+//-----------------------------------------------------------------------
+// next, we JSON decode confirgation and build database objects...
+//-----------------------------------------------------------------------
+$config = json_decode(file_get_contents($configFile), TRUE);
+require $config['scriptdir']."writeDB.php";
+require $config['scriptdir']."writeModel.php";
+writeDBClass($config);
+writeDBConstants($config);
+writeDBObject($config);
+//------------------------------------------------------
+// finally, we create value objects and models for each
+// table and view in the database...
+//------------------------------------------------------
+$pdo    = connectDB($config);
+$query  = $pdo->prepare("SHOW TABLES");
+$query->execute();
+$tables = $query->fetchAll(PDO::FETCH_NUM);
+foreach($tables as $table)
+{
+    $tableName = $table[0];
+    $desc      = $pdo->query('DESCRIBE ' . $tableName);
+    if($desc)
+        $columns   = $desc->fetchAll(PDO::FETCH_ASSOC);
+    //printTableInfo($tableName, $columns);
+    writeValueObject($config, $tableName, $columns);
+    writeObjectModel($config, $tableName, $columns);
+}
+//-------------------------
+// wrap things up and exit
+//-------------------------
+$pdo = null;
+echo "\nDone\n";
+
+
+/********************************************************
+ * Returns a PDO connection object for a DB connection
+ *
+ * @param  $json
+ * @return $conn
+ *********************************************************
+ */
+function connectDB($json)
+{
+    //--------------------------------------
+    // Construct Data Source Name (DSN)
+    // username and password for PDO object
+    //--------------------------------------
+    $dsn =""       .$json['dbdriver'].  ":";
+    $dsn.="host="  .$json['dbserver'].  ";";
+    $dsn.="dbname=".$json['dbname'].    ";";
+    $dsn.="port="  .$json['dbport'];
+    $username      =$json['dbuser'];
+    $password      =$json['dbpassword'];
+
+    return(new PDO($dsn,$username,$password));
+}
+
+/********************************************************
+ * printResults
+ *
+ * @param  $results
+ * @return n/a
+ *********************************************************
+ */
+function printResultSet($results)
+{
+    foreach($results as $contact)
+    {
+    echo "contactId:      ".$contact->contactId."\n";
+    echo "contactName:    ".$contact->contactName."\n";
+    echo "contactEmail:   ".$contact->contactEmail."\n";
+    echo "contactPhone:   ".$contact->contactPhone."\n";
+    echo "contactSubject: ".$contact->contactSubject."\n";
+    echo "contactMessage: ".$contact->contactMessage."\n";
+    echo "contactCreated: ".$contact->contactCreated."\n";
+    echo "contactModified:".$contact->contactModified."\n";
+    echo "contactSource:  ".$contact->contactSource."\n";
+    echo "contactStatus:  ".$contact->contactStatus."\n";
+    echo "\n";
+    echo $contact->makeJSON();
+    echo "\n";
+    }
+}
+
+/********************************************************
+ * printTableInfo
+ *
+ * @param  $tableName
+ * @param  $columns
+ * @return n/a
+ *********************************************************
+ */
+function printTableInfo($tableName, $columns)
+{
+    foreach($columns as $column)
+    {
+        echo $tableName.".".$column['Field']."\t".' - '.
+	                    $column['Type']."\t".' - '.
+			    $column['Key']."\t".' - '.
+			    $column['Extra']."\t".' - '.
+			    $column['Null']. "\n";
+    }
+}
+
+?>
